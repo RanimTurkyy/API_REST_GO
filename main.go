@@ -6,6 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type Task struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
+var tasks = []Task{}
+
 func main() {
   r := gin.Default()
   r.GET("/ping", func(c *gin.Context) {
@@ -14,10 +21,17 @@ func main() {
     })
   })
   r.GET("/tasks", func(c *gin.Context) {
-  task := []string{}
     c.JSON(http.StatusOK, gin.H{
-      "tasks": task,
+      "tasks": tasks,
     })
   })
+  r.POST("/tasks", func(c *gin.Context) {
+		var newTask Task
+		if err := c.BindJSON(&newTask); err != nil {
+			return
+		}
+		tasks = append(tasks, newTask)
+		c.IndentedJSON(http.StatusCreated, newTask)
+	})
   r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
