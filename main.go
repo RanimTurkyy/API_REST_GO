@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +17,39 @@ type Task struct {
 
 var tasks = []Task{}
 
+// Fonction pour sauvegarder les tâches dans tasks.json
+func saveTasksToFile() {
+	data, err := json.MarshalIndent(tasks, "", "  ")
+	if err != nil {
+		log.Fatalf("Erreur de sérialisation JSON: %v", err)
+	}
+	err = ioutil.WriteFile("tasks.json", data, 0644)
+	if err != nil {
+		log.Fatalf("Erreur d'écriture dans le fichier: %v", err)
+	}
+}
+
+// Fonction pour charger les tâches depuis tasks.json
+func loadTasksFromFile() {
+	file, err := os.Open("tasks.json")
+	if err != nil {
+		log.Printf("Aucun fichier trouvé, démarrage avec une liste vide.")
+		return
+	}
+	defer file.Close()
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatalf("Erreur de lecture du fichier: %v", err)
+	}
+
+	err = json.Unmarshal(data, &tasks)
+	if err != nil {
+		log.Fatalf("Erreur de désérialisation JSON: %v", err)
+	}
+}
+
+// Fonction pour récupérer une tâche par ID
 func getTaskByID(id string) (*Task, int) {
 	for i, t := range tasks {
 		if t.ID == id {
@@ -22,32 +59,40 @@ func getTaskByID(id string) (*Task, int) {
 	return nil, -1
 }
 
-
 func main() {
-  r := gin.Default()
+	// Charger les tâches depuis le fichier JSON au démarrage
+	loadTasksFromFile()
 
-  r.GET("/ping", func(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H{
-      "message": "pong",
-    })
-  })
+	r := gin.Default()
 
-  r.GET("/tasks", func(c *gin.Context) {
-    c.JSON(http.StatusOK, gin.H{
-      "tasks": tasks,
-    })
-  })
-  
-  r.POST("/tasks", func(c *gin.Context) {
+	// Route de test
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+
+	// Liste des tâches
+	r.GET("/tasks", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"tasks": tasks,
+		})
+	})
+
+	// Ajouter une tâche
+	r.POST("/tasks", func(c *gin.Context) {
 		var newTask Task
 		if err := c.BindJSON(&newTask); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides"})
 			return
 		}
+
 		tasks = append(tasks, newTask)
+		saveTasksToFile() // Sauvegarde après ajout
 		c.IndentedJSON(http.StatusCreated, newTask)
 	})
 
-  // Modifier une tâche
+	// Modifier une tâche
 	r.PUT("/tasks/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		var updatedTask Task
@@ -65,6 +110,7 @@ func main() {
 
 		// Mise à jour de la tâche
 		tasks[index].Title = updatedTask.Title
+		saveTasksToFile() // Sauvegarde après modification
 		c.JSON(http.StatusOK, tasks[index])
 	})
 
@@ -80,8 +126,9 @@ func main() {
 
 		// Suppression de la tâche
 		tasks = append(tasks[:index], tasks[index+1:]...)
+		saveTasksToFile() // Sauvegarde après suppression
 		c.JSON(http.StatusNoContent, nil)
 	})
 
-  r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run() // Écoute sur 0.0.0.0:8080 (ou localhost:8080 sur Windows)
 }
