@@ -13,6 +13,16 @@ type Task struct {
 
 var tasks = []Task{}
 
+func getTaskByID(id string) (*Task, int) {
+	for i, t := range tasks {
+		if t.ID == id {
+			return &t, i
+		}
+	}
+	return nil, -1
+}
+
+
 func main() {
   r := gin.Default()
 
