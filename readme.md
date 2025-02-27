@@ -1,6 +1,6 @@
 # Project Realized by:
-* Souey Ihab
-* turki ranim
-* OMRANE Sadek  
-*   
 
+- Souey Ihab
+- turki ranim
+- Trojette Ala
+- OMRANE Sadek
