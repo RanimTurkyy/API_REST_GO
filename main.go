@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -128,6 +129,19 @@ func main() {
 		tasks = append(tasks[:index], tasks[index+1:]...)
 		saveTasksToFile() // Sauvegarde après suppression
 		c.JSON(http.StatusNoContent, nil)
+	})
+
+	// /tasks/process
+	r.POST("/tasks/process", func(c *gin.Context) {
+		go func() { // Corrected the function declaration
+			log.Println("Starting processing...")
+			time.Sleep(5 * time.Second)
+			log.Println("Processing done.")
+		}()
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Processing...",
+		})
 	})
 
 	r.Run() // Écoute sur 0.0.0.0:8080 (ou localhost:8080 sur Windows)
